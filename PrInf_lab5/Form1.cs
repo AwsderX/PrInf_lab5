@@ -9,14 +9,16 @@ namespace PrInf_lab5
         private Bitmap originalImage;
         private Bitmap encryptedImage;
         Chart chart = new Chart();
+
         public Form1()
         {
             InitializeComponent();
 
-            chart.Size = new Size(400, 300); 
+            chart.Size = new Size(400, 300);
             chart.Location = new Point(20, 20);
 
             this.Controls.Add(chart);
+
 
             // Начальное значение регистра и обратную связь для генератора
             uint initialRegister = 0b1000;
@@ -27,8 +29,15 @@ namespace PrInf_lab5
 
             pictureBox.Image = originalImage;
 
+            // Генерируем последовательность битов
+            List<bool> bitSequence = GenerateBitSequence(originalImage.Width * originalImage.Height);
+
             // Точечная диаграмма генерируемой последовательности
-            DisplaySequenceChart();
+            DisplaySequenceChart(bitSequence);
+
+            // Оценка качества последовательности с помощью критерия хи-квадрат
+            double chiSquare = ChiSquareTest(bitSequence);
+            MessageBox.Show($"Значение хи-квадрат: {chiSquare}", "Оценка качества", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -36,22 +45,41 @@ namespace PrInf_lab5
             EncryptImage();
             MessageBox.Show("Изображение зашифровано.", "Шифрование", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-        private void DisplaySequenceChart()
+
+        private void DisplaySequenceChart(List<bool> bitSequence)
         {
             chart.Series.Clear();
 
             Series series = new Series("Bit Sequence");
             series.ChartType = SeriesChartType.Point;
-            chart.SuppressExceptions = false;
 
-            // Генерируем последовательность битов и добавляем их в серию
-            for (int i = 0; i < originalImage.Width * originalImage.Height; i++)
+            // Добавляем биты в серию
+            for (int i = 0; i < bitSequence.Count; i++)
             {
-                bool bit = generator.GetNextBit();
+                bool bit = bitSequence[i];
                 series.Points.AddXY(i, bit ? 1 : 0);
             }
 
+            // Создание новой области диаграммы
+            ChartArea chartArea = new ChartArea();
+            // Установка значения для оси Y
+            chartArea.AxisY.Minimum = -0.5;
+            // Добавление области диаграммы в коллекцию ChartAreas
+            chart.ChartAreas.Add(chartArea);
             chart.Series.Add(series);
+        }
+
+        private List<bool> GenerateBitSequence(int length)
+        {
+            List<bool> bitSequence = new List<bool>();
+
+            for (int i = 0; i < length; i++)
+            {
+                bool bit = generator.GetNextBit();
+                bitSequence.Add(bit);
+            }
+
+            return bitSequence;
         }
 
         private void EncryptImage()
@@ -68,6 +96,7 @@ namespace PrInf_lab5
                     encryptedImage.SetPixel(x, y, encryptedColor);
                 }
             }
+
             pictureBox.Image = encryptedImage;
         }
 
@@ -85,10 +114,32 @@ namespace PrInf_lab5
             return Color.FromArgb(r, g, b);
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private double ChiSquareTest(List<bool> bitSequence)
         {
-            encryptedImage.Save("C:\\VSProjects\\PrInf_lab5\\PrInf_lab5\\Resources\\encrypted_tux.png");
-            MessageBox.Show("Зашифрованное изображение сохранено.", "Сохранение", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            const int IntervalSize = 8; // Размер интервала для оценки (в битах)
+            int totalIntervals = bitSequence.Count / IntervalSize;
+
+            int[] observedCounts = new int[totalIntervals];
+            int[] expectedCounts = new int[totalIntervals];
+
+            // Считаем наблюдаемые и ожидаемые частоты
+            for (int i = 0; i < bitSequence.Count; i++)
+            {
+                bool bit = bitSequence[i];
+                int intervalIndex = i / IntervalSize;
+                observedCounts[intervalIndex] += bit ? 1 : 0;
+                expectedCounts[intervalIndex]++;
+            }
+
+            // Вычисляем хи-квадрат
+            double chiSquare = 0.0;
+            for (int i = 0; i < totalIntervals; i++)
+            {
+                double diff = observedCounts[i] - expectedCounts[i];
+                chiSquare += diff * diff / expectedCounts[i];
+            }
+
+            return chiSquare;
         }
     }
 }
