@@ -20,7 +20,7 @@ namespace PrInf_lab5
             this.Controls.Add(chart);
 
 
-            // Начальное значение регистра и обратную связь для генератора
+            // Начальное значение регистра и обратная связь для генератора
             uint initialRegister = 0b1000;
             uint feedbackMask = 0b1001;
             generator = new GaloisLFSR(initialRegister, feedbackMask);
