@@ -24,7 +24,7 @@ namespace PrInf_lab5
             int[] sequence = lfsr.Generate((int)Math.Pow(2, taps.Max()) - 1); //максимальное количество различных состояний
             textBoxOut.Text+=(string.Join(", ", sequence) + Environment.NewLine);
 
-            int numBins = 2; // кол-во групп, на которые разбивается последовательность.
+            int numBins = 2; // 0,1 
             double[] observedFrequencies = new double[numBins];
             for (int i = 0; i < sequence.Length; i++)
             {
