@@ -1,145 +1,91 @@
-
+using System.Drawing.Imaging;
 using System.Windows.Forms.DataVisualization.Charting;
 
 namespace PrInf_lab5
 {
     public partial class Form1 : Form
     {
-        private GaloisLFSR generator;
-        private Bitmap originalImage;
-        private Bitmap encryptedImage;
-        Chart chart = new Chart();
-
         public Form1()
         {
             InitializeComponent();
+            textBox1.Text = "1, 0, 0, 1, 1";
+            textBox2.Text = "4, 3, 2";
+            //originalImage = new Bitmap("C:\\VSProjects\\PrInf_lab5\\PrInf_lab5\\Resources\\tux.png");
 
-            chart.Size = new Size(400, 300);
-            chart.Location = new Point(20, 20);
-
-            this.Controls.Add(chart);
-
-
-            // Начальное значение регистра и обратная связь для генератора
-            uint initialRegister = 0b1000;
-            uint feedbackMask = 0b1001;
-            generator = new GaloisLFSR(initialRegister, feedbackMask);
-
-            originalImage = new Bitmap("C:\\VSProjects\\PrInf_lab5\\PrInf_lab5\\Resources\\tux.png");
-
-            pictureBox.Image = originalImage;
-
-            // Генерируем последовательность битов
-            List<bool> bitSequence = GenerateBitSequence(originalImage.Width * originalImage.Height);
-
-            // Точечная диаграмма генерируемой последовательности
-            DisplaySequenceChart(bitSequence);
-
-            // Оценка качества последовательности с помощью критерия хи-квадрат
-            double chiSquare = ChiSquareTest(bitSequence);
-            MessageBox.Show($"Значение хи-квадрат: {chiSquare}", "Оценка качества", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            EncryptImage();
-            MessageBox.Show("Изображение зашифровано.", "Шифрование", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
+            int header = 110;
+            int block_s = 8;
+            int[] seed = Array.ConvertAll(textBox1.Text.Split(','), Convert.ToInt32); // начальное значение регистра
+            int[] taps = Array.ConvertAll(textBox2.Text.Split(','), Convert.ToInt32); // образующий многочлен для конфигурации Галуа x^4 + x^3 + x^2 + 1
+            GaloisLFSR lfsr = new GaloisLFSR(seed, taps);
+            int[] sequence = lfsr.Generate((int)Math.Pow(2, taps.Max()) - 1); //максимальное количество различных состояний
+            textBoxOut.Text+=(string.Join(", ", sequence) + Environment.NewLine);
 
-        private void DisplaySequenceChart(List<bool> bitSequence)
-        {
-            chart.Series.Clear();
-
-            Series series = new Series("Bit Sequence");
-            series.ChartType = SeriesChartType.Point;
-
-            // Добавляем биты в серию
-            for (int i = 0; i < bitSequence.Count; i++)
+            int numBins = 2; // кол-во групп, на которые разбивается последовательность.
+            double[] observedFrequencies = new double[numBins];
+            for (int i = 0; i < sequence.Length; i++)
             {
-                bool bit = bitSequence[i];
-                series.Points.AddXY(i, bit ? 1 : 0);
+                observedFrequencies[sequence[i]]++;
+            }
+            double expectedFrequency = sequence.Length / (double)numBins;
+            double hi_sq = 0;
+            for (int i = 0; i < numBins; i++)
+            {
+                hi_sq += Math.Pow(observedFrequencies[i] - expectedFrequency, 2) / expectedFrequency;
             }
 
-            // Создание новой области диаграммы
-            ChartArea chartArea = new ChartArea();
-            // Установка значения для оси Y
-            chartArea.AxisY.Minimum = -0.5;
-            // Добавление области диаграммы в коллекцию ChartAreas
-            chart.ChartAreas.Add(chartArea);
-            chart.Series.Add(series);
-        }
+            textBoxOut.Text += $"Хи-квадрат: {hi_sq}";
 
-        private List<bool> GenerateBitSequence(int length)
-        {
-            List<bool> bitSequence = new List<bool>();
+            // Загрузка изображения в память
+            byte[] imageData = File.ReadAllBytes("C:\\VSProjects\\PrInf_lab5\\PrInf_lab5\\Resources\\tux.bmp");
 
-            for (int i = 0; i < length; i++)
+            // Гаммирование каждого блока изображения
+            int blocksCount = (imageData.Length - header) / block_s;
+            for (int i = 0; i < blocksCount; i++)
             {
-                bool bit = generator.GetNextBit();
-                bitSequence.Add(bit);
-            }
+                // Получение следующего 8-битного блока для шифрования
+                byte[] block = new byte[block_s];
+                Array.Copy(imageData, header + i * block_s, block, 0, block_s);
 
-            return bitSequence;
-        }
-
-        private void EncryptImage()
-        {
-            encryptedImage = new Bitmap(originalImage);
-
-            // Гаммирование к каждому пикселю изображения
-            for (int x = 0; x < originalImage.Width; x++)
-            {
-                for (int y = 0; y < originalImage.Height; y++)
+                // Гаммирование блока и сохранение результата
+                byte[] cipherBlock = new byte[block_s];
+                byte[] keyStream = ToByteArray(lfsr.Generate(block_s * 8));
+                for (int j = 0; j < block_s; j++)
                 {
-                    Color originalColor = originalImage.GetPixel(x, y);
-                    Color encryptedColor = EncryptColor(originalColor);
-                    encryptedImage.SetPixel(x, y, encryptedColor);
+                    cipherBlock[j] = (byte)(block[j] ^ keyStream[j]);
+                }
+                Array.Copy(cipherBlock, 0, imageData, header + i * block_s, block_s);
+            }
+
+            // Сохранение зашифрованного изображения на диск
+            File.WriteAllBytes("C:\\VSProjects\\PrInf_lab5\\PrInf_lab5\\Resources\\encrypted_tux.bmp", imageData);
+
+
+            LFSRDiagram diagram = new LFSRDiagram(sequence);
+
+            // Создаем окно и добавляем в него диаграмму
+            Form form = new Form();
+            form.FormClosing += (sender, e) => { Application.Exit(); };
+            form.Controls.Add(diagram);
+            form.Size = new Size(500, 300);
+            form.ShowDialog();
+        }
+        private byte[] ToByteArray(int[] bits)
+        {
+            byte[] bytes = new byte[bits.Length / 8];
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] = 0;
+                for (int j = 0; j < 8; j++)
+                {
+                    bytes[i] |= (byte)(bits[i * 8 + j] << j);
                 }
             }
-
-            pictureBox.Image = encryptedImage;
-        }
-
-        private Color EncryptColor(Color color)
-        {
-            byte r = color.R;
-            byte g = color.G;
-            byte b = color.B;
-
-            // XOR к каждому компоненту цвета с битом из генератора
-            r ^= generator.GetNextBit() ? (byte)0xFF : (byte)0x00;
-            g ^= generator.GetNextBit() ? (byte)0xFF : (byte)0x00;
-            b ^= generator.GetNextBit() ? (byte)0xFF : (byte)0x00;
-
-            return Color.FromArgb(r, g, b);
-        }
-
-        private double ChiSquareTest(List<bool> bitSequence)
-        {
-            const int IntervalSize = 8; // Размер интервала для оценки (в битах)
-            int totalIntervals = bitSequence.Count / IntervalSize;
-
-            int[] observedCounts = new int[totalIntervals];
-            int[] expectedCounts = new int[totalIntervals];
-
-            // Считаем наблюдаемые и ожидаемые частоты
-            for (int i = 0; i < bitSequence.Count; i++)
-            {
-                bool bit = bitSequence[i];
-                int intervalIndex = i / IntervalSize;
-                observedCounts[intervalIndex] += bit ? 1 : 0;
-                expectedCounts[intervalIndex]++;
-            }
-
-            // Вычисляем хи-квадрат
-            double chiSquare = 0.0;
-            for (int i = 0; i < totalIntervals; i++)
-            {
-                double diff = observedCounts[i] - expectedCounts[i];
-                chiSquare += diff * diff / expectedCounts[i];
-            }
-
-            return chiSquare;
+            return bytes;
         }
     }
+
 }

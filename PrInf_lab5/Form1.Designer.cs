@@ -29,16 +29,16 @@
         private void InitializeComponent()
         {
             button1 = new Button();
+            textBoxOut = new TextBox();
+            pictureBox = new PictureBox();
             textBox1 = new TextBox();
             textBox2 = new TextBox();
-            pictureBox = new PictureBox();
-            button2 = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox).BeginInit();
             SuspendLayout();
             // 
             // button1
             // 
-            button1.Location = new Point(452, 96);
+            button1.Location = new Point(324, 133);
             button1.Name = "button1";
             button1.Size = new Size(116, 56);
             button1.TabIndex = 0;
@@ -46,10 +46,27 @@
             button1.UseVisualStyleBackColor = true;
             button1.Click += button1_Click;
             // 
+            // textBoxOut
+            // 
+            textBoxOut.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point);
+            textBoxOut.Location = new Point(470, 12);
+            textBoxOut.Multiline = true;
+            textBoxOut.Name = "textBoxOut";
+            textBoxOut.Size = new Size(455, 212);
+            textBoxOut.TabIndex = 1;
+            // 
+            // pictureBox
+            // 
+            pictureBox.Location = new Point(12, 12);
+            pictureBox.Name = "pictureBox";
+            pictureBox.Size = new Size(273, 225);
+            pictureBox.TabIndex = 2;
+            pictureBox.TabStop = false;
+            // 
             // textBox1
             // 
             textBox1.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point);
-            textBox1.Location = new Point(452, 42);
+            textBox1.Location = new Point(324, 24);
             textBox1.Name = "textBox1";
             textBox1.Size = new Size(116, 33);
             textBox1.TabIndex = 1;
@@ -57,36 +74,18 @@
             // textBox2
             // 
             textBox2.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point);
-            textBox2.Location = new Point(574, 13);
-            textBox2.Multiline = true;
+            textBox2.Location = new Point(324, 79);
             textBox2.Name = "textBox2";
-            textBox2.Size = new Size(455, 212);
+            textBox2.Size = new Size(116, 33);
             textBox2.TabIndex = 1;
-            // 
-            // pictureBox
-            // 
-            pictureBox.Location = new Point(1040, 12);
-            pictureBox.Name = "pictureBox";
-            pictureBox.Size = new Size(273, 225);
-            pictureBox.TabIndex = 2;
-            pictureBox.TabStop = false;
-            // 
-            // button2
-            // 
-            button2.Location = new Point(452, 169);
-            button2.Name = "button2";
-            button2.Size = new Size(116, 56);
-            button2.TabIndex = 3;
-            button2.Text = "button2";
-            button2.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1325, 436);
-            Controls.Add(button2);
             Controls.Add(pictureBox);
+            Controls.Add(textBoxOut);
             Controls.Add(textBox2);
             Controls.Add(textBox1);
             Controls.Add(button1);
@@ -100,9 +99,9 @@
         #endregion
 
         private Button button1;
+        private TextBox textBoxOut;
+        private PictureBox pictureBox;
         private TextBox textBox1;
         private TextBox textBox2;
-        private PictureBox pictureBox;
-        private Button button2;
     }
 }
